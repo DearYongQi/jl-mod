@@ -198,6 +198,7 @@ public class ProfileModel {
 		fontAA = true;
 
 		showKeyboard = true;
+		vkType = VirtualKeyboard.TYPE_ARR_NUM;
 		touchInput = true;
 
 		vkButtonShape = VirtualKeyboard.SHAPE_ROUND_RECT;
