@@ -76,7 +76,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	private static final int TYPE_PHONE = 1;
 	private static final int TYPE_PHONE_ARROWS = 2;
 	private static final int TYPE_NUM_ARR = 3;
-	private static final int TYPE_ARR_NUM = 4;
+	public static final int TYPE_ARR_NUM = 4;
 	private static final int TYPE_NUMBERS = 5;
 	private static final int TYPE_ARROWS = 6;
 
