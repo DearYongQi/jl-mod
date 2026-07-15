@@ -3,6 +3,7 @@ package com.yongqimac.j2meplayer.ui;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -156,7 +157,7 @@ public class GameDetailActivity extends AppCompatActivity {
 
         Button btn = new Button(this);
         btn.setText(text);
-        btn.setBackgroundTint(slot.empty ? 0xFF424242 : 0xFF2E7D32);
+        btn.setBackgroundTintList(ColorStateList.valueOf(slot.empty ? 0xFF424242 : 0xFF2E7D32));
         btn.setTextColor(0xFFFFFFFF);
         btn.setOnClickListener(v -> {
             if (slot.empty) {
@@ -173,7 +174,7 @@ public class GameDetailActivity extends AppCompatActivity {
         if (!slot.empty) {
             Button delBtn = new Button(this);
             delBtn.setText("删");
-            delBtn.setBackgroundTint(0xFFD32F2F);
+            delBtn.setBackgroundTintList(ColorStateList.valueOf(0xFFD32F2F));
             delBtn.setTextColor(0xFFFFFFFF);
             delBtn.setOnClickListener(v -> deleteSave(slot.slot));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -268,7 +269,7 @@ public class GameDetailActivity extends AppCompatActivity {
             protected void onPostExecute(Boolean ok) {
                 if (ok) {
                     btnFavorite.setText("已收藏");
-                    btnFavorite.setBackgroundTint(0xFFFF9800);
+                    btnFavorite.setBackgroundTintList(ColorStateList.valueOf(0xFFFF9800));
                 } else {
                     Toast.makeText(GameDetailActivity.this, "操作失败", Toast.LENGTH_SHORT).show();
                 }
