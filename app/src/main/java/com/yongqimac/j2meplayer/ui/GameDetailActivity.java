@@ -243,7 +243,7 @@ public class GameDetailActivity extends AppCompatActivity {
         for (SkinManager.Skin skin : SkinManager.SKINS) {
             Button btn = new Button(this);
             btn.setText(skin.name);
-            btn.setBackgroundTint(skin.id.equals(currentId) ? 0xFFE0551F : 0xFF424242);
+            btn.setBackgroundTintList(ColorStateList.valueOf(skin.id.equals(currentId) ? 0xFFE0551F : 0xFF424242));
             btn.setTextColor(0xFFFFFFFF);
             btn.setOnClickListener(v -> {
                 SkinManager.saveSkin(this, skin.id);
