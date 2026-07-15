@@ -133,6 +133,7 @@ dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.arch.core.common)
+    implementation(libs.androidx.cardview)
     implementation(libs.androidx.collection)
     implementation(libs.androidx.concurrent.futures)
     implementation(libs.androidx.constraintlayout)

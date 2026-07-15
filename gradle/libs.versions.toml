@@ -43,6 +43,7 @@ ambilwarna = { module = "com.github.yukuku:ambilwarna", version.ref = "ambilwarn
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-arch-core-common = { module = "androidx.arch.core:core-common", version.ref = "androidx-arch" }
+androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "androidx-cardview" }
 androidx-collection = { module = "androidx.collection:collection-ktx", version.ref = "androidx-collection" }
 androidx-concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "androidx-concurrent" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }
