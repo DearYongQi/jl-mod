@@ -12,11 +12,18 @@ import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import com.android.dx.command.dexer.Main;
 import com.yongqimac.j2meplayer.api.ApiClient;
 import com.yongqimac.j2meplayer.model.SaveSlot;
 import ru.playsoftware.j2meloader.R;
+import ru.playsoftware.j2meloader.config.Config;
+import ru.playsoftware.j2meloader.config.ProfileModel;
+import ru.playsoftware.j2meloader.config.ProfilesManager;
+import ru.playsoftware.j2meloader.util.FileUtils;
 import java.io.*;
 import java.net.URL;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 public class GameDetailActivity extends AppCompatActivity {
 
@@ -77,7 +84,6 @@ public class GameDetailActivity extends AppCompatActivity {
                     publishProgress(30);
                     byte[] jarData = ApiClient.downloadJar(gameFile);
                     publishProgress(80);
-
                     File dir = new File(getExternalFilesDir(null), "jars");
                     if (!dir.exists()) dir.mkdirs();
                     File jarFile = new File(dir, gameFile);
@@ -99,21 +105,112 @@ public class GameDetailActivity extends AppCompatActivity {
             @Override
             protected void onPostExecute(File jarFile) {
                 downloadProgress.setVisibility(View.GONE);
-                btnPlay.setEnabled(true);
-                btnPlay.setText("下载并启动");
-
                 if (jarFile == null) {
+                    btnPlay.setEnabled(true);
+                    btnPlay.setText("下载并启动");
                     Toast.makeText(GameDetailActivity.this, "下载失败", Toast.LENGTH_SHORT).show();
                     return;
                 }
-
-                Intent intent = new Intent(GameDetailActivity.this,
-                        javax.microedition.shell.MicroActivity.class);
-                intent.setData(Uri.fromFile(jarFile));
-                intent.putExtra("ru.playsoftware.j2meloader.midletName", gameName);
-                startActivity(intent);
+                btnPlay.setText("安装中...");
+                new InstallTask(jarFile).execute();
             }
         }.execute();
+    }
+
+    private class InstallTask extends AsyncTask<Void, Integer, String> {
+        private final File jarFile;
+        InstallTask(File jar) { this.jarFile = jar; }
+
+        @Override
+        protected String doInBackground(Void... v) {
+            try {
+                String baseName = jarFile.getName();
+                int dot = baseName.lastIndexOf('.');
+                if (dot > 0) baseName = baseName.substring(0, dot);
+                String appDirName = baseName.replaceAll("[^A-Za-z0-9._-]", "_");
+                if (appDirName.isEmpty()) appDirName = "app_" + System.currentTimeMillis();
+
+                File convertedDir = new File(Config.getEmulatorDir(), "converted");
+                File appDir = new File(convertedDir, appDirName);
+                File tmpDir = new File(convertedDir, ".tmp_" + appDirName);
+                if (tmpDir.exists()) FileUtils.deleteDirectory(tmpDir);
+                if (!tmpDir.mkdirs()) return null;
+                if (appDir.exists()) FileUtils.deleteDirectory(appDir);
+
+                // Extract MANIFEST.MF
+                try (JarFile jf = new JarFile(jarFile)) {
+                    Manifest mf = jf.getManifest();
+                    if (mf != null) {
+                        try (FileOutputStream mfOut = new FileOutputStream(
+                                new File(tmpDir, Config.MIDLET_MANIFEST_FILE))) {
+                            mf.write(mfOut);
+                        }
+                    } else {
+                        new File(tmpDir, Config.MIDLET_MANIFEST_FILE).createNewFile();
+                    }
+                }
+
+                // Copy JAR as res.jar
+                FileUtils.copyFileUsingChannel(jarFile, new File(tmpDir, Config.MIDLET_RES_FILE));
+
+                // Run DEX conversion
+                publishProgress(50);
+                try {
+                    Main.main(new String[]{
+                            "--no-optimize",
+                            "--output=" + tmpDir.getAbsolutePath() + Config.MIDLET_DEX_ARCH,
+                            jarFile.getAbsolutePath()
+                    });
+                } catch (Throwable t) {
+                    return null;
+                }
+
+                // Move tmpDir to appDir
+                if (!tmpDir.renameTo(appDir)) {
+                    FileUtils.deleteDirectory(appDir);
+                    if (!tmpDir.renameTo(appDir)) {
+                        FileUtils.deleteDirectory(tmpDir);
+                        return null;
+                    }
+                }
+
+                // Create default config
+                File configDir = new File(Config.getEmulatorDir(),
+                        "configs" + File.separator + appDirName);
+                if (!configDir.exists() && !configDir.mkdirs()) {
+                    return appDir.getAbsolutePath();
+                }
+                File cfgFile = new File(configDir, Config.MIDLET_CONFIG_FILE);
+                if (!cfgFile.exists()) {
+                    ProfileModel p = new ProfileModel();
+                    p.dir = configDir;
+                    ProfilesManager.saveConfig(p);
+                }
+                return appDir.getAbsolutePath();
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            downloadProgress.setProgress(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String appPath) {
+            btnPlay.setEnabled(true);
+            btnPlay.setText("下载并启动");
+            if (appPath == null) {
+                Toast.makeText(GameDetailActivity.this, "安装失败", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent intent = new Intent(GameDetailActivity.this,
+                    javax.microedition.shell.MicroActivity.class);
+            intent.setData(Uri.parse(appPath));
+            intent.putExtra("ru.playsoftware.j2meloader.midletName", gameName);
+            startActivity(intent);
+        }
     }
 
     private void loadSaves() {

@@ -33,7 +33,7 @@ public class GameListActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
         errorText = findViewById(R.id.error_text);
 
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
         adapter = new GameListAdapter(this, java.util.Collections.emptyList());
         recyclerView.setAdapter(adapter);
 
