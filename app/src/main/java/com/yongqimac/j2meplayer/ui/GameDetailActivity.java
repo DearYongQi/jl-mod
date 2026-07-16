@@ -381,7 +381,7 @@ public class GameDetailActivity extends AppCompatActivity {
     private void buildSkinSelector() {
         skinContainer.removeAllViews();
         String currentId = SkinManager.getCurrentSkin(this).id;
-        java.util.List<SkinManager.Skin> skins = SkinManager.SKINS;
+        java.util.List<SkinManager.Skin> skins = java.util.Arrays.asList(SkinManager.SKINS);
         float density = getResources().getDisplayMetrics().density;
         int cols = 3;
         int btnPadH = (int)(6 * density);
