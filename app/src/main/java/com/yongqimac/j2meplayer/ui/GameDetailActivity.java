@@ -22,6 +22,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.lang.reflect.Method;
 
 public class GameDetailActivity extends AppCompatActivity {
 
@@ -163,11 +164,11 @@ public class GameDetailActivity extends AppCompatActivity {
                         emuDir = new File(getExternalFilesDir(null), "emulator").getAbsolutePath();
                         convertedDir = new File(emuDir, "converted");
                         log("emuDir fallback=" + emuDir);
-                        if (!convertedDir.mkdirs()) {
+                        if (!convertedDir.exists() && !convertedDir.mkdirs()) {
                             log("FAIL: mkdir convertedDir fallback also failed");
                             return null;
                         }
-                        log("fallback convertedDir OK");
+                        log("fallback convertedDir OK" + (convertedDir.exists() ? " (exists)" : ""));
                     }
                 }
 
@@ -211,6 +212,35 @@ public class GameDetailActivity extends AppCompatActivity {
                 File resJar = new File(tmpDir, Config.MIDLET_RES_FILE);
                 FileUtils.copyFileUsingChannel(jarFile, resJar);
                 log("res.jar size=" + resJar.length());
+
+                // DEX conversion - needed for FULL_EMULATOR class loading
+                log("run dex converter");
+                File dexFile = new File(tmpDir, Config.MIDLET_DEX_FILE);
+                try {
+                    // dx Main.main() calls System.exit(); use SecurityManager to intercept
+                    String[] dxArgs = {"--dex", "--output=" + dexFile.getAbsolutePath(),
+                            jarFile.getAbsolutePath()};
+                    System.setSecurityManager(new SecurityManager() {
+                        @Override
+                        public void checkExit(int status) {
+                            throw new SecurityException("exit:" + status);
+                        }
+                    });
+                    try {
+                        com.android.dx.command.dexer.Main.main(dxArgs);
+                    } catch (SecurityException se) {
+                        // Expected: Main.main calls System.exit(0) on success
+                    }
+                    System.setSecurityManager(null);
+                    if (dexFile.exists()) {
+                        log("dex conversion OK, size=" + dexFile.length());
+                    } else {
+                        log("WARN: dex file not created");
+                    }
+                } catch (Exception e) {
+                    log("FAIL dex conversion: " + e);
+                    // Continue anyway - games may still work if DEX is not critical
+                }
 
                 // Create config
                 File configDir = new File(emuDir, "configs" + File.separator + appDirName);
