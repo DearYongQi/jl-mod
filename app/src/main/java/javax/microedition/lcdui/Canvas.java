@@ -583,9 +583,11 @@ public abstract class Canvas extends Displayable {
 	}
 
 	private void repaintInternal() {
+		OverlayLog.d("J2ME-Loader", "repaintInternal called, visible=" + visible + " w=" + width + " h=" + height);
 		synchronized (paintEvent.clip) {
 			paintEvent.invalidateClip(this, 0, 0, width, height);
 		}
+		OverlayLog.d("J2ME-Loader", "repaintInternal posting PaintEvent, isPending=" + paintEvent.isPending);
 		Display.postEvent(paintEvent);
 	}
 
@@ -882,6 +884,7 @@ public abstract class Canvas extends Displayable {
 				b = clip.bottom;
 				clip.setEmpty();
 			}
+			OverlayLog.d("J2ME-Loader", "PaintEvent.process: l="+l+" t="+t+" r="+r+" b="+b+" surfaceValid="+(surface!=null && surface.isValid()));
 			if (l >= r || t >= b) {
 				return;
 			}
@@ -894,6 +897,7 @@ public abstract class Canvas extends Displayable {
 			Graphics g = offscreen.getSingleGraphics();
 			g.reset(l, t, r, b);
 			try {
+				OverlayLog.d("J2ME-Loader", "PaintEvent calling paint(g)");
 				paint(g);
 			} catch (Throwable e) {
 				OverlayLog.d(TAG, "Error in paint(): " + e);
@@ -904,6 +908,7 @@ public abstract class Canvas extends Displayable {
 			if (surface == null || !surface.isValid()) {
 				return;
 			}
+			OverlayLog.d("J2ME-Loader", "PaintEvent flushing to screen");
 			requestFlushToScreen();
 		}
 
@@ -1135,6 +1140,7 @@ public abstract class Canvas extends Displayable {
 		@Override
 		public void surfaceCreated(@NonNull SurfaceHolder holder) {
 			OverlayLog.d("J2ME-Loader", "Canvas surfaceCreated, mode=" + settings.graphicsMode + ", w=" + width + ", h=" + height);
+			OverlayLog.d("J2ME-Loader", "BUILD: fix-isPending-showNotify");
 			if (renderer != null) {
 				renderer.start();
 			}
@@ -1151,6 +1157,7 @@ public abstract class Canvas extends Displayable {
 			if (overlay != null) {
 				overlay.setTarget(Canvas.this);
 			}
+			OverlayLog.d("J2ME-Loader", "surfaceCreated done");
 		}
 
 		@Override
