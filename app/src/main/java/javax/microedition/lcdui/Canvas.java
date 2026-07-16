@@ -642,7 +642,7 @@ public abstract class Canvas extends Displayable {
 						surface.lockHardwareCanvas() : surface.lockCanvas(null);
 				OverlayLog.d("J2ME-Loader", "repaintScreen lockCanvas result=" + (canvas != null ? "OK" : "NULL"));
 				if (canvas == null) {
-					OverlayLog.e("J2ME-Loader", "repaintScreen FAILED: lockCanvas returned null");
+					OverlayLog.d("J2ME-Loader", "repaintScreen FAILED: lockCanvas returned null");
 					return true;
 				}
 				CanvasWrapper g = this.canvasWrapper;
