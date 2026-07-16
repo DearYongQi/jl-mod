@@ -41,14 +41,8 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
-      - name: Upload emulator debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: JL-Mod-emulator-debug
-          path: app/build/outputs/apk/emulator/debug/*.apk
-
-      - name: Upload universal APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: JL-Mod-universal-debug
+          name: JL-Mod
           path: app/build/outputs/apk/emulator/debug/*-universal-debug.apk
