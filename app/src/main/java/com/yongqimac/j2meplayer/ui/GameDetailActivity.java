@@ -7,7 +7,6 @@ import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
@@ -29,7 +28,7 @@ public class GameDetailActivity extends AppCompatActivity {
     private String gameName, gameFile, gameCover;
     private ImageView coverView;
     private TextView nameView;
-    private Button btnPlay, btnFavorite;
+    private Button btnPlay;
     private ProgressBar downloadProgress;
     private LinearLayout savesContainer, skinContainer;
     private ProgressBar savesProgress;
@@ -46,7 +45,6 @@ public class GameDetailActivity extends AppCompatActivity {
         coverView = findViewById(R.id.detail_cover);
         nameView = findViewById(R.id.detail_name);
         btnPlay = findViewById(R.id.btn_play);
-        btnFavorite = findViewById(R.id.btn_favorite);
         downloadProgress = findViewById(R.id.download_progress);
         savesContainer = findViewById(R.id.saves_container);
         savesProgress = findViewById(R.id.saves_progress);
@@ -64,10 +62,17 @@ public class GameDetailActivity extends AppCompatActivity {
         }
 
         btnPlay.setOnClickListener(v -> downloadAndPlay());
-        btnFavorite.setOnClickListener(v -> toggleFavorite());
 
         loadSaves();
         buildSkinSelector();
+    }
+
+    private void logError(String tag, String msg) {
+        android.util.Log.e(tag, msg);
+        new Thread(() -> {
+            try { ApiClient.logError(tag, msg, gameName); }
+            catch (Exception ignored) {}
+        }).start();
     }
 
     private void downloadAndPlay() {
@@ -92,6 +97,7 @@ public class GameDetailActivity extends AppCompatActivity {
                     publishProgress(100);
                     return jarFile;
                 } catch (Exception e) {
+                    logError("DownloadJar", e.toString());
                     return null;
                 }
             }
@@ -118,10 +124,19 @@ public class GameDetailActivity extends AppCompatActivity {
 
     private class InstallTask extends AsyncTask<Void, Integer, String> {
         private final File jarFile;
+        private final StringBuilder installLog = new StringBuilder();
+
         InstallTask(File jar) { this.jarFile = jar; }
+
+        private void log(String step) {
+            installLog.append(step).append("\n");
+            logError("InstallTask", step);
+        }
 
         @Override
         protected String doInBackground(Void... v) {
+            log("=== Install start: " + jarFile.getAbsolutePath() + " ===");
+
             try {
                 String baseName = jarFile.getName();
                 int dot = baseName.lastIndexOf('.');
@@ -129,20 +144,44 @@ public class GameDetailActivity extends AppCompatActivity {
                 String appDirName = baseName.replaceAll("[^A-Za-z0-9._-]", "_");
                 if (appDirName.isEmpty()) appDirName = "app_" + System.currentTimeMillis();
 
-                // Get emulator dir with fallback if not initialized
+                log("appDirName=" + appDirName);
+                log("Config.getEmulatorDir()=" + Config.getEmulatorDir());
+                log("getExternalFilesDir=" + getExternalFilesDir(null));
+
                 String emuDir = Config.getEmulatorDir();
                 if (emuDir == null || emuDir.isEmpty()) {
                     emuDir = new File(getExternalFilesDir(null), "emulator").getAbsolutePath();
+                    log("emuDir fallback=" + emuDir);
                 }
 
                 File convertedDir = new File(emuDir, "converted");
+                if (!convertedDir.exists()) {
+                    log("mkdir convertedDir=" + convertedDir);
+                    if (!convertedDir.mkdirs()) {
+                        log("FAIL: mkdir convertedDir");
+                        return null;
+                    }
+                }
+
                 File appDir = new File(convertedDir, appDirName);
                 File tmpDir = new File(convertedDir, ".tmp_" + appDirName);
-                if (tmpDir.exists()) FileUtils.deleteDirectory(tmpDir);
-                if (!tmpDir.mkdirs()) return null;
-                if (appDir.exists()) FileUtils.deleteDirectory(appDir);
+
+                if (tmpDir.exists()) {
+                    log("delete old tmpDir");
+                    FileUtils.deleteDirectory(tmpDir);
+                }
+                if (!tmpDir.mkdirs()) {
+                    log("FAIL: mkdir tmpDir");
+                    return null;
+                }
+
+                if (appDir.exists()) {
+                    log("delete old appDir");
+                    FileUtils.deleteDirectory(appDir);
+                }
 
                 // Extract MANIFEST.MF
+                log("extract manifest");
                 try (JarFile jf = new JarFile(jarFile)) {
                     Manifest mf = jf.getManifest();
                     if (mf != null) {
@@ -150,45 +189,58 @@ public class GameDetailActivity extends AppCompatActivity {
                                 new File(tmpDir, Config.MIDLET_MANIFEST_FILE))) {
                             mf.write(mfOut);
                         }
+                        log("manifest OK");
                     } else {
                         new File(tmpDir, Config.MIDLET_MANIFEST_FILE).createNewFile();
+                        log("manifest empty, created blank");
                     }
+                } catch (Exception e) {
+                    log("FAIL extract manifest: " + e);
                 }
 
-                // Copy JAR as res.jar (FULL_EMULATOR only needs res.jar + manifest)
-                FileUtils.copyFileUsingChannel(jarFile, new File(tmpDir, Config.MIDLET_RES_FILE));
+                // Copy JAR as res.jar
+                log("copy res.jar");
+                File resJar = new File(tmpDir, Config.MIDLET_RES_FILE);
+                FileUtils.copyFileUsingChannel(jarFile, resJar);
+                log("res.jar size=" + resJar.length());
 
-                // Create default config first (before rename)
-                File configDir = new File(emuDir,
-                        "configs" + File.separator + appDirName);
-                if (!configDir.exists() && !configDir.mkdirs()) {
-                    FileUtils.deleteDirectory(tmpDir);
-                    return null;
+                // Create config
+                File configDir = new File(emuDir, "configs" + File.separator + appDirName);
+                if (!configDir.exists()) {
+                    if (!configDir.mkdirs()) {
+                        log("FAIL: mkdir configDir=" + configDir);
+                        FileUtils.deleteDirectory(tmpDir);
+                        return null;
+                    }
+                    log("configDir created");
                 }
                 File cfgFile = new File(configDir, Config.MIDLET_CONFIG_FILE);
                 if (!cfgFile.exists()) {
                     ProfileModel p = new ProfileModel();
                     p.dir = configDir;
                     ProfilesManager.saveConfig(p);
+                    log("config.json saved");
                 }
 
                 // Move tmpDir to appDir
+                log("rename tmpDir to appDir");
                 if (!tmpDir.renameTo(appDir)) {
                     FileUtils.deleteDirectory(appDir);
                     if (!tmpDir.renameTo(appDir)) {
+                        log("FAIL: rename failed after retry");
                         FileUtils.deleteDirectory(tmpDir);
                         return null;
                     }
                 }
+                log("install SUCCESS: " + appDir.getAbsolutePath());
                 return appDir.getAbsolutePath();
             } catch (Exception e) {
+                log("FAIL exception: " + e.toString());
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                log(sw.toString());
                 return null;
             }
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            downloadProgress.setProgress(values[0]);
         }
 
         @Override
@@ -197,13 +249,11 @@ public class GameDetailActivity extends AppCompatActivity {
             btnPlay.setText("下载并启动");
             if (appPath == null) {
                 Toast.makeText(GameDetailActivity.this, "安装失败", Toast.LENGTH_SHORT).show();
+                logError("InstallFail", installLog.toString());
                 return;
             }
-            Intent intent = new Intent(GameDetailActivity.this,
-                    javax.microedition.shell.MicroActivity.class);
-            intent.setData(Uri.parse(appPath));
-            intent.putExtra("ru.playsoftware.j2meloader.midletName", gameName);
-            startActivity(intent);
+            // Use Config.startApp for proper launch
+            Config.startApp(GameDetailActivity.this, gameName, appPath);
         }
     }
 
@@ -252,10 +302,8 @@ public class GameDetailActivity extends AppCompatActivity {
         btn.setTextColor(0xFFFFFFFF);
         btn.setOnClickListener(v -> {
             if (slot.empty) {
-                // Save: get screenshot + RMS data from the emulator
                 Toast.makeText(this, "请在游戏中暂停后保存", Toast.LENGTH_SHORT).show();
             } else {
-                // Load: download save data and launch emulator
                 loadSaveAndLaunch(slot.slot);
             }
         });
@@ -291,7 +339,6 @@ public class GameDetailActivity extends AppCompatActivity {
                     Toast.makeText(GameDetailActivity.this, "下载存档失败", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                // Write RMS data to emulator dir
                 try {
                     File rmsDir = new File(getExternalFilesDir(null),
                             "appdb/" + gameName.replaceAll("[^a-zA-Z0-9._-]", "_"));
@@ -334,40 +381,47 @@ public class GameDetailActivity extends AppCompatActivity {
     private void buildSkinSelector() {
         skinContainer.removeAllViews();
         String currentId = SkinManager.getCurrentSkin(this).id;
-        for (SkinManager.Skin skin : SkinManager.SKINS) {
-            Button btn = new Button(this);
-            btn.setText(skin.name);
-            btn.setBackgroundTintList(ColorStateList.valueOf(skin.id.equals(currentId) ? 0xFFE0551F : 0xFF424242));
-            btn.setTextColor(0xFFFFFFFF);
-            btn.setOnClickListener(v -> {
-                SkinManager.saveSkin(this, skin.id);
-                Toast.makeText(this, "皮肤已切换为: " + skin.name, Toast.LENGTH_SHORT).show();
-                buildSkinSelector(); // refresh
-            });
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.setMargins(0, 4, 8, 0);
-            skinContainer.addView(btn, lp);
-        }
-    }
+        java.util.List<SkinManager.Skin> skins = SkinManager.SKINS;
+        float density = getResources().getDisplayMetrics().density;
+        int cols = 3;
+        int btnPadH = (int)(6 * density);
+        int btnPadV = (int)(8 * density);
+        int margin = (int)(4 * density);
 
-    private void toggleFavorite() {
-        new AsyncTask<Void, Void, Boolean>() {
-            @Override
-            protected Boolean doInBackground(Void... v) {
-                try { return ApiClient.toggleFavorite(gameName); }
-                catch (Exception e) { return false; }
-            }
-            @Override
-            protected void onPostExecute(Boolean ok) {
-                if (ok) {
-                    btnFavorite.setText("已收藏");
-                    btnFavorite.setBackgroundTintList(ColorStateList.valueOf(0xFFFF9800));
-                } else {
-                    Toast.makeText(GameDetailActivity.this, "操作失败", Toast.LENGTH_SHORT).show();
+        int count = skins.size();
+        for (int i = 0; i < count; i += cols) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            rowLp.setMargins(0, margin, 0, 0);
+            row.setLayoutParams(rowLp);
+
+            for (int j = i; j < i + cols && j < count; j++) {
+                SkinManager.Skin skin = skins.get(j);
+                Button btn = new Button(this);
+                btn.setText(skin.name);
+                btn.setTextSize(12);
+                btn.setPadding(btnPadH, btnPadV, btnPadH, btnPadV);
+                btn.setBackgroundTintList(ColorStateList.valueOf(
+                        skin.id.equals(currentId) ? 0xFFE0551F : 0xFF424242));
+                btn.setTextColor(0xFFFFFFFF);
+                btn.setOnClickListener(v -> {
+                    SkinManager.saveSkin(this, skin.id);
+                    Toast.makeText(this, "皮肤已切换为: " + skin.name, Toast.LENGTH_SHORT).show();
+                    buildSkinSelector();
+                });
+
+                LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                if (j < i + cols - 1) {
+                    blp.setMarginEnd(margin);
                 }
+                row.addView(btn, blp);
             }
-        }.execute();
+            skinContainer.addView(row);
+        }
     }
 
     @Override

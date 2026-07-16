@@ -92,6 +92,39 @@ public class ApiClient {
         return resp.success;
     }
 
+    // --- Logging ---
+
+    public static void logError(String tag, String message, String game) {
+        try {
+            String url = BASE + "/api/emulator/log";
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+            conn.setRequestProperty("Content-Type", "application/json");
+            String json = gson.toJson(new LogEntry(tag, message, game));
+            conn.getOutputStream().write(json.getBytes("UTF-8"));
+            conn.getOutputStream().close();
+            conn.getResponseCode(); // trigger request
+            conn.disconnect();
+        } catch (Exception ignored) {}
+    }
+
+    static class LogEntry {
+        String tag;
+        String message;
+        String game;
+        String time;
+        LogEntry(String t, String m, String g) {
+            this.tag = t;
+            this.message = m;
+            this.game = g;
+            this.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+                    java.util.Locale.getDefault()).format(new java.util.Date());
+        }
+    }
+
     // --- Helpers ---
 
     private static String get(String url) throws IOException {
