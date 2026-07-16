@@ -871,11 +871,11 @@ public abstract class Canvas extends Displayable {
 		@Override
 		public synchronized void process() {
 			if (!visible) {
+				isPending = false;
 				return;
 			}
 			int l, t, r, b;
 			synchronized (clip) {
-				isPending = false;
 				l = clip.left;
 				t = clip.top;
 				r = clip.right;
