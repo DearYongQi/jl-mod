@@ -22,7 +22,6 @@ import java.io.*;
 import java.net.URL;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.lang.reflect.Method;
 
 public class GameDetailActivity extends AppCompatActivity {
 
@@ -214,30 +213,21 @@ public class GameDetailActivity extends AppCompatActivity {
                 log("res.jar size=" + resJar.length());
 
                 // DEX conversion - needed for FULL_EMULATOR class loading
-                // Use reflection to call Main.process() directly, bypassing System.exit()
+                // Main.main() calls System.exit() only on failure, not on success
                 log("run dex converter");
                 File dexFile = new File(tmpDir, Config.MIDLET_DEX_FILE);
                 try {
-                    String[] dxArgs = {"--dex", "--output=" + dexFile.getAbsolutePath(),
-                            jarFile.getAbsolutePath()};
-                    com.android.dx.command.dexer.Main.Arguments args =
-                            new com.android.dx.command.dexer.Main.Arguments();
-                    args.parse(dxArgs);
-                    com.android.dx.command.dexer.Main main =
-                            new com.android.dx.command.dexer.Main(args);
-                    Method processMethod = com.android.dx.command.dexer.Main.class
-                            .getDeclaredMethod("process");
-                    processMethod.setAccessible(true);
-                    int result = (int) processMethod.invoke(main);
+                    com.android.dx.command.dexer.Main.main(new String[]{
+                            "--dex", "--output=" + dexFile.getAbsolutePath(),
+                            jarFile.getAbsolutePath()
+                    });
                     if (dexFile.exists()) {
-                        log("dex conversion OK, size=" + dexFile.length() +
-                                ", exit=" + result);
+                        log("dex conversion OK, size=" + dexFile.length());
                     } else {
-                        log("WARN: dex file not created, exit=" + result);
+                        log("WARN: dex file not created");
                     }
                 } catch (Exception e) {
                     log("FAIL dex conversion: " + e);
-                    // Continue anyway - games may still work if DEX is not critical
                 }
 
                 // Create config
