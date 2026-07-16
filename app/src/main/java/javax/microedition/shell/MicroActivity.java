@@ -90,6 +90,7 @@ import ru.playsoftware.j2meloader.databinding.ActivityMicroBinding;
 import ru.playsoftware.j2meloader.databinding.DialogInputBinding;
 import ru.playsoftware.j2meloader.util.Constants;
 import ru.playsoftware.j2meloader.util.LogUtils;
+import ru.playsoftware.j2meloader.util.OverlayLog;
 
 public class MicroActivity extends AppCompatActivity {
 	private static final int ORIENTATION_DEFAULT = 0;
@@ -111,6 +112,7 @@ public class MicroActivity extends AppCompatActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		lockNightMode();
 		super.onCreate(savedInstanceState);
+		OverlayLog.init(this);
 		ContextHolder.setCurrentActivity(this);
 		binding = ActivityMicroBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
@@ -310,7 +312,7 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	public void setCurrent(Displayable displayable) {
-		Log.d("J2ME-Loader", "Display.setCurrent: " + displayable.getClass().getSimpleName());
+		OverlayLog.d("J2ME-Loader", "Display.setCurrent: " + displayable.getClass().getSimpleName());
 		ViewHandler.postEvent(new SetCurrentEvent(current, displayable));
 		current = displayable;
 	}

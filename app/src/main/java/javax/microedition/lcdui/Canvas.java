@@ -78,6 +78,7 @@ import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 
 import io.reactivex.Single;
+import ru.playsoftware.j2meloader.util.OverlayLog;
 import io.reactivex.schedulers.Schedulers;
 import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.config.ProfileModel;
@@ -655,7 +656,7 @@ public abstract class Canvas extends Displayable {
 			}
 			if (parallelRedraw) uiHandler.removeMessages(0);
 		} catch (Exception e) {
-			Log.w(TAG, "repaintScreen: " + e);
+			OverlayLog.d(TAG, "repaintScreen: " + e);
 		}
 		return true;
 	}
@@ -893,7 +894,7 @@ public abstract class Canvas extends Displayable {
 			try {
 				paint(g);
 			} catch (Throwable e) {
-				Log.e(TAG, "Error in paint()", e);
+				OverlayLog.d(TAG, "Error in paint(): " + e);
 			}
 			synchronized (bufferLock) {
 				offscreen.copyTo(offscreenCopy);
@@ -1131,7 +1132,7 @@ public abstract class Canvas extends Displayable {
 
 		@Override
 		public void surfaceCreated(@NonNull SurfaceHolder holder) {
-			Log.d("J2ME-Loader", "Canvas surfaceCreated, mode=" + settings.graphicsMode + ", w=" + width + ", h=" + height);
+			OverlayLog.d("J2ME-Loader", "Canvas surfaceCreated, mode=" + settings.graphicsMode + ", w=" + width + ", h=" + height);
 			if (renderer != null) {
 				renderer.start();
 			}

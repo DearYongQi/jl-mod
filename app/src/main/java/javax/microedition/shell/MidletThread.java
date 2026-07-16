@@ -23,6 +23,8 @@ import android.os.Process;
 import android.util.Log;
 
 import javax.microedition.lcdui.Canvas;
+
+import ru.playsoftware.j2meloader.util.OverlayLog;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
@@ -36,7 +38,7 @@ import androidx.lifecycle.LifecycleOwner;
 public class MidletThread extends HandlerThread implements Handler.Callback {
 	private static final String TAG = MidletThread.class.getName();
 	private static final UncaughtExceptionHandler uncaughtExceptionHandler = (t, e) ->
-			Log.e(TAG, "Error in thread: \"" + t + "\" after destroy app called", e);
+			OverlayLog.d(TAG, "Error in thread: \"" + t + "\" after destroy app called: " + e);
 
 	private static final int INIT = 0;
 	private static final int START = 1;
@@ -137,15 +139,15 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 				}
 				try {
 					state = STARTED;
-					Log.d("J2ME-Loader", "MIDlet START calling startApp()");
+					OverlayLog.d("J2ME-Loader", "MIDlet START calling startApp()");
 					midlet.startApp();
-					Log.d("J2ME-Loader", "MIDlet START startApp() returned");
+					OverlayLog.d("J2ME-Loader", "MIDlet START startApp() returned");
 				} catch (MIDletStateChangeException e) {
 					state = PAUSED;
-					Log.w(TAG, "Midlet doesn't want to start!", e);
+					OverlayLog.d(TAG, "Midlet doesn't want to start!: " + e);
 				} catch (Throwable t) {
 					state = DESTROYED;
-					Log.e("J2ME-Loader", "MIDlet startApp() crashed", t);
+					OverlayLog.d("J2ME-Loader", "MIDlet startApp() crashed: " + t);
 					throw new RuntimeException("Failed startApp", t);
 				}
 				break;
@@ -173,9 +175,9 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 				try {
 					midlet.destroyApp(true);
 				} catch (MIDletStateChangeException e) {
-					Log.w(TAG, "Midlet didn't want to die!", e);
+					OverlayLog.d(TAG, "Midlet didn't want to die!: " + e);
 				} catch (Throwable t) {
-					Log.e(TAG, "Filed destroyApp:", t);
+					OverlayLog.d(TAG, "Filed destroyApp: " + t);
 				}
 				notifyDestroyed();
 				break;
