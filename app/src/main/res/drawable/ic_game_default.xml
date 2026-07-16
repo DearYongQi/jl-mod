@@ -3,16 +3,25 @@
     android:height="120dp"
     android:viewportWidth="120"
     android:viewportHeight="120">
-    <path
-        android:fillColor="#555555"
-        android:pathData="M20,20h80v80h-80z"/>
-    <path
-        android:fillColor="#888888"
-        android:pathData="M40,50l15,-20l10,10l15,-20l15,30z"/>
-    <path
-        android:fillColor="#AAAAAA"
-        android:pathData="M30,55a15,15 0,1,1 30,0a15,15 0,1,1 -30,0"/>
-    <path
-        android:fillColor="#AAAAAA"
-        android:pathData="M60,55a15,15 0,1,1 30,0a15,15 0,1,1 -30,0"/>
+    <!-- Dark gradient background -->
+    <path android:fillColor="#2A2A3E" android:pathData="M0,0h120v120H0z" />
+    <path android:fillColor="#1E1E30" android:pathData="M0,0Q60,20 120,0v120H0z" />
+    <!-- Game controller body -->
+    <path android:fillColor="#505068"
+        android:pathData="M35,48h50v24h-50z" />
+    <!-- Left D-pad -->
+    <path android:fillColor="#3E3E50"
+        android:pathData="M27,55h12v10H27z
+                         M33,48h10v24H33z" />
+    <!-- Right buttons -->
+    <path android:fillColor="#3E3E50"
+        android:pathData="M81,50a5,5 0,1,1 0,10a5,5 0,1,1 0,-10
+                         M81,65a5,5 0,1,1 0,10a5,5 0,1,1 0,-10" />
+    <path android:fillColor="#3E3E50"
+        android:pathData="M93,57a4,4 0,1,1 0,8a4,4 0,1,1 0,-8" />
+    <!-- Joystick -->
+    <path android:fillColor="#606078"
+        android:pathData="M56,56l8,-8l8,8l-8,8z" />
+    <!-- Text -->
+    <path android:fillColor="#707088" android:pathData="M30,92l0,-4l2,0l0,4zM34,88l0,8l2,0l0,-4l2,0l0,4l2,0l0,-8zM42,88l4,0l0,2l-2,0l0,2l2,0l0,2l-2,0l0,2l4,0l0,-8zM48,88l0,8l2,0l0,-3l2,0l0,-2l-2,0l0,-1l2,0l0,-2zM55,88l4,0l0,2l-2,0l0,2l2,0l0,2l-2,0l0,2l4,0l0,-8zM61,88l0,8l4,0l0,-2l-2,0l0,-6zM67,88l0,8l4,0l0,-2l-2,0l0,-6zM73,88l0,2l4,0l0,2l-4,0l0,2l4,0l0,2l-4,0zM79,88l0,8l4,0l0,-2l-2,0l0,-6zM85,88l0,8l4,0l0,-2l-2,0l0,-6z" />
 </vector>

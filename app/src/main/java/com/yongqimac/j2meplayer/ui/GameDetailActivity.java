@@ -12,7 +12,6 @@ import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import com.android.dx.command.dexer.Main;
 import com.yongqimac.j2meplayer.api.ApiClient;
 import com.yongqimac.j2meplayer.model.SaveSlot;
 import ru.playsoftware.j2meloader.R;
@@ -130,7 +129,13 @@ public class GameDetailActivity extends AppCompatActivity {
                 String appDirName = baseName.replaceAll("[^A-Za-z0-9._-]", "_");
                 if (appDirName.isEmpty()) appDirName = "app_" + System.currentTimeMillis();
 
-                File convertedDir = new File(Config.getEmulatorDir(), "converted");
+                // Get emulator dir with fallback if not initialized
+                String emuDir = Config.getEmulatorDir();
+                if (emuDir == null || emuDir.isEmpty()) {
+                    emuDir = new File(getExternalFilesDir(null), "emulator").getAbsolutePath();
+                }
+
+                File convertedDir = new File(emuDir, "converted");
                 File appDir = new File(convertedDir, appDirName);
                 File tmpDir = new File(convertedDir, ".tmp_" + appDirName);
                 if (tmpDir.exists()) FileUtils.deleteDirectory(tmpDir);
@@ -150,19 +155,21 @@ public class GameDetailActivity extends AppCompatActivity {
                     }
                 }
 
-                // Copy JAR as res.jar
+                // Copy JAR as res.jar (FULL_EMULATOR only needs res.jar + manifest)
                 FileUtils.copyFileUsingChannel(jarFile, new File(tmpDir, Config.MIDLET_RES_FILE));
 
-                // Run DEX conversion
-                publishProgress(50);
-                try {
-                    Main.main(new String[]{
-                            "--no-optimize",
-                            "--output=" + tmpDir.getAbsolutePath() + Config.MIDLET_DEX_ARCH,
-                            jarFile.getAbsolutePath()
-                    });
-                } catch (Throwable t) {
+                // Create default config first (before rename)
+                File configDir = new File(emuDir,
+                        "configs" + File.separator + appDirName);
+                if (!configDir.exists() && !configDir.mkdirs()) {
+                    FileUtils.deleteDirectory(tmpDir);
                     return null;
+                }
+                File cfgFile = new File(configDir, Config.MIDLET_CONFIG_FILE);
+                if (!cfgFile.exists()) {
+                    ProfileModel p = new ProfileModel();
+                    p.dir = configDir;
+                    ProfilesManager.saveConfig(p);
                 }
 
                 // Move tmpDir to appDir
@@ -172,19 +179,6 @@ public class GameDetailActivity extends AppCompatActivity {
                         FileUtils.deleteDirectory(tmpDir);
                         return null;
                     }
-                }
-
-                // Create default config
-                File configDir = new File(Config.getEmulatorDir(),
-                        "configs" + File.separator + appDirName);
-                if (!configDir.exists() && !configDir.mkdirs()) {
-                    return appDir.getAbsolutePath();
-                }
-                File cfgFile = new File(configDir, Config.MIDLET_CONFIG_FILE);
-                if (!cfgFile.exists()) {
-                    ProfileModel p = new ProfileModel();
-                    p.dir = configDir;
-                    ProfilesManager.saveConfig(p);
                 }
                 return appDir.getAbsolutePath();
             } catch (Exception e) {
@@ -274,8 +268,9 @@ public class GameDetailActivity extends AppCompatActivity {
             delBtn.setBackgroundTintList(ColorStateList.valueOf(0xFFD32F2F));
             delBtn.setTextColor(0xFFFFFFFF);
             delBtn.setOnClickListener(v -> deleteSave(slot.slot));
+            int delWidth = (int) (100 * getResources().getDisplayMetrics().density);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    80, LinearLayout.LayoutParams.WRAP_CONTENT);
+                    delWidth, LinearLayout.LayoutParams.WRAP_CONTENT);
             lp.setMarginStart(8);
             row.addView(delBtn, lp);
         }
@@ -337,6 +332,7 @@ public class GameDetailActivity extends AppCompatActivity {
     }
 
     private void buildSkinSelector() {
+        skinContainer.removeAllViews();
         String currentId = SkinManager.getCurrentSkin(this).id;
         for (SkinManager.Skin skin : SkinManager.SKINS) {
             Button btn = new Button(this);
