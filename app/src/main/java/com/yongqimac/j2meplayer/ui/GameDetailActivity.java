@@ -151,15 +151,23 @@ public class GameDetailActivity extends AppCompatActivity {
                 String emuDir = Config.getEmulatorDir();
                 if (emuDir == null || emuDir.isEmpty()) {
                     emuDir = new File(getExternalFilesDir(null), "emulator").getAbsolutePath();
-                    log("emuDir fallback=" + emuDir);
+                    log("emuDir null, fallback=" + emuDir);
                 }
 
                 File convertedDir = new File(emuDir, "converted");
                 if (!convertedDir.exists()) {
                     log("mkdir convertedDir=" + convertedDir);
                     if (!convertedDir.mkdirs()) {
-                        log("FAIL: mkdir convertedDir");
-                        return null;
+                        log("FAIL: mkdir convertedDir, try fallback");
+                        // Scoped storage blocked external dir, fallback to app-private
+                        emuDir = new File(getExternalFilesDir(null), "emulator").getAbsolutePath();
+                        convertedDir = new File(emuDir, "converted");
+                        log("emuDir fallback=" + emuDir);
+                        if (!convertedDir.mkdirs()) {
+                            log("FAIL: mkdir convertedDir fallback also failed");
+                            return null;
+                        }
+                        log("fallback convertedDir OK");
                     }
                 }
 
