@@ -257,6 +257,7 @@ public abstract class Canvas extends Displayable {
 	}
 
 	public void onDraw(android.graphics.Canvas canvas) {
+		OverlayLog.d("J2ME-Loader", "onDraw offscreenCopy=" + (offscreenCopy != null) + " size=" + (offscreenCopy != null ? offscreenCopy.getWidth()+"x"+offscreenCopy.getHeight() : "null"));
 		if (settings.graphicsMode != 2) return; // Fix for Android Pie
 		CanvasWrapper g = canvasWrapper;
 		g.bind(canvas);
@@ -639,7 +640,9 @@ public abstract class Canvas extends Displayable {
 			synchronized (surfaceLock) {
 				android.graphics.Canvas canvas = settings.graphicsMode == 3 ?
 						surface.lockHardwareCanvas() : surface.lockCanvas(null);
+				OverlayLog.d("J2ME-Loader", "repaintScreen lockCanvas result=" + (canvas != null ? "OK" : "NULL"));
 				if (canvas == null) {
+					OverlayLog.e("J2ME-Loader", "repaintScreen FAILED: lockCanvas returned null");
 					return true;
 				}
 				CanvasWrapper g = this.canvasWrapper;
