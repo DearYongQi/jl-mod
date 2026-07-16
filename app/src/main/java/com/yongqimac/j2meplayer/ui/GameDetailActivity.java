@@ -213,12 +213,12 @@ public class GameDetailActivity extends AppCompatActivity {
                 log("res.jar size=" + resJar.length());
 
                 // DEX conversion - needed for FULL_EMULATOR class loading
-                // Main.main() calls System.exit() only on failure, not on success
                 log("run dex converter");
                 File dexFile = new File(tmpDir, Config.MIDLET_DEX_FILE);
                 try {
                     com.android.dx.command.dexer.Main.main(new String[]{
-                            "--dex", "--output=" + dexFile.getAbsolutePath(),
+                            "--no-optimize",
+                            "--output=" + dexFile.getAbsolutePath(),
                             jarFile.getAbsolutePath()
                     });
                     if (dexFile.exists()) {
