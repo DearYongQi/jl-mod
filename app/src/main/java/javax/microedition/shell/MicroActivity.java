@@ -36,6 +36,7 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.method.DigitsKeyListener;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -309,6 +310,7 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	public void setCurrent(Displayable displayable) {
+		Log.d("J2ME-Loader", "Display.setCurrent: " + displayable.getClass().getSimpleName());
 		ViewHandler.postEvent(new SetCurrentEvent(current, displayable));
 		current = displayable;
 	}

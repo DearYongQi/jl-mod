@@ -137,12 +137,15 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 				}
 				try {
 					state = STARTED;
+					Log.d("J2ME-Loader", "MIDlet START calling startApp()");
 					midlet.startApp();
+					Log.d("J2ME-Loader", "MIDlet START startApp() returned");
 				} catch (MIDletStateChangeException e) {
 					state = PAUSED;
 					Log.w(TAG, "Midlet doesn't want to start!", e);
 				} catch (Throwable t) {
 					state = DESTROYED;
+					Log.e("J2ME-Loader", "MIDlet startApp() crashed", t);
 					throw new RuntimeException("Failed startApp", t);
 				}
 				break;

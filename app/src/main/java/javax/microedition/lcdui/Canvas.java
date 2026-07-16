@@ -1131,6 +1131,7 @@ public abstract class Canvas extends Displayable {
 
 		@Override
 		public void surfaceCreated(@NonNull SurfaceHolder holder) {
+			Log.d("J2ME-Loader", "Canvas surfaceCreated, mode=" + settings.graphicsMode + ", w=" + width + ", h=" + height);
 			if (renderer != null) {
 				renderer.start();
 			}
