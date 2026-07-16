@@ -676,6 +676,7 @@ public abstract class Canvas extends Displayable {
 
 	protected void showNotify() {
 		OverlayLog.d("J2ME-Loader", "Canvas showNotify() called");
+		repaintInternal();
 	}
 
 	protected void hideNotify() {
