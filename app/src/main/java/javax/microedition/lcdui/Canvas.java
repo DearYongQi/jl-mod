@@ -647,7 +647,7 @@ public abstract class Canvas extends Displayable {
 				}
 				CanvasWrapper g = this.canvasWrapper;
 				g.bind(canvas);
-				g.clear(settings.screenBackgroundColor | Color.BLACK);
+				g.clear(0xFFFF0000); // DEBUG: red background test
 				SkinLayer skinLayer = SkinLayer.getInstance();
 				int p = skinLayer != null && skinLayer.hasDisplayFrame() ? 0 : settings.screenPadding;
 				canvas.clipRect(p, p, displayWidth - p, displayHeight - p);
